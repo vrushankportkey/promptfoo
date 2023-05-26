@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 
 import fetch from 'node-fetch';
+import {HttpsProxyAgent} from 'https-proxy-agent';
 import yaml from 'js-yaml';
 import nunjucks from 'nunjucks';
 import { parse as parsePath } from 'path';
@@ -18,6 +19,9 @@ import type { RequestInfo, RequestInit, Response } from 'node-fetch';
 import type { EvaluateSummary } from './types.js';
 
 const PROMPT_DELIMITER = '---';
+
+const certPath = path.join(os.homedir(), '.mitmproxy', 'mitmproxy-ca-cert.pem');
+const cert = fs.readFileSync(certPath);
 
 function parseJson(json: string): any | undefined {
   try {
@@ -89,6 +93,10 @@ export function fetchWithTimeout(
       controller.abort();
       reject(new Error(`Request timed out after ${timeout} ms`));
     }, timeout);
+
+    const proxyAgent = new HttpsProxyAgent('http://localhost:8080');
+    proxyAgent.options.ca = cert;
+    options.agent = proxyAgent;
 
     try {
       const response = await fetch(url, options);
