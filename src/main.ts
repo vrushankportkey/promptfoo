@@ -281,7 +281,7 @@ async function main() {
         prompts: cmdObj.prompts || fileConfig.prompts || defaultConfig.prompts,
         providers: cmdObj.providers || fileConfig.providers || defaultConfig.providers,
         tests: cmdObj.tests || cmdObj.vars || fileConfig.tests || defaultConfig.tests,
-        theories: fileConfig.theories,
+        theories: fileConfig.theories || defaultConfig.theories,
         sharing:
           process.env.PROMPTFOO_DISABLE_SHARING === '1'
             ? false
