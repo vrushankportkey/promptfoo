@@ -258,7 +258,7 @@ class Evaluator {
     let tests = (
       testSuite.tests && testSuite.tests.length > 0
         ? testSuite.tests
-        : testSuite.theories
+        : testSuite.scenarios
         ? []
         : [
             {
@@ -270,10 +270,10 @@ class Evaluator {
       return Object.assign(finalTestCase, test);
     });
 
-    //build theories and add to tests
-    if (testSuite.theories && testSuite.theories.length > 0) {
-      for (const theory of testSuite.theories) {
-        for (const data of theory.dataSet) {
+    //build scenarios and add to tests
+    if (testSuite.scenarios && testSuite.scenarios.length > 0) {
+      for (const theory of testSuite.scenarios) {
+        for (const data of theory.config) {
           //merge defaultTest with TheoryData
           const theoryTests = (
             theory.tests || [
