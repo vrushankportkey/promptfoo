@@ -245,12 +245,23 @@ function TableHeader({
 }
 
 function ResultsSparkline({ scores }: { scores: number[] }) {
-   return (
-     <Sparklines data={scores} min={0} max={1}>
-       <SparklinesBars />
-     </Sparklines>
-   );
- }
+  const minScore = Math.min(...scores);
+  const maxScore = Math.max(...scores);
+  const range = maxScore - minScore;
+  const binSize = range / 10;
+  const bins = new Array(10).fill(0);
+
+  scores.forEach((score) => {
+    const binIndex = Math.floor((score - minScore) / binSize);
+    bins[binIndex]++;
+  });
+
+  return (
+    <Sparklines data={bins} min={0} max={Math.max(...bins)}>
+      <SparklinesBars />
+    </Sparklines>
+  );
+}
 
 interface ResultsTableProps {
   maxTextLength: number;
