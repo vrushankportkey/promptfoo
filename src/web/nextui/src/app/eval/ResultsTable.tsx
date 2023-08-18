@@ -379,6 +379,7 @@ export default function ResultsTable({
                   ) : null}
                   )
                 </div>
+                <ResultsSparkline data={body.map((row) => row.outputs[idx])} />
               </>
             );
           },
