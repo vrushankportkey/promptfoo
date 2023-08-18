@@ -252,11 +252,10 @@ function ResultsSparkline({ scores }: { scores: number[] }) {
   const bins = new Array(10).fill(0);
 
   scores.forEach((score) => {
-    const binIndex = Math.floor((score - minScore) / binSize);
+    let binIndex = Math.floor((score - minScore) / binSize);
+    binIndex = Math.min(binIndex, 9); // Ensure binIndex never exceeds 9
     bins[binIndex]++;
   });
-
-  console.log(bins)
 
   return (
     <Sparklines data={bins} min={0} max={Math.max(...bins)}>
