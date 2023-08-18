@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { diffSentences, diffJson, diffWords } from 'diff';
+import { Sparklines, SparklinesBar, SparklinesReferenceLine } from 'react-sparklines';
 
 import './index.css';
 
