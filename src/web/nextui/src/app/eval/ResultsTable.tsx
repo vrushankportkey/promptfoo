@@ -245,20 +245,21 @@ function TableHeader({
 }
 
 function ResultsSparkline({ scores }: { scores: number[] }) {
+  const numBins = 10;
   const minScore = Math.min(...scores);
   const maxScore = Math.max(...scores);
   const range = maxScore - minScore;
-  const binSize = range / 10;
-  const bins = new Array(10).fill(0);
+  const binSize = range / numBins;
+  const bins = new Array(numBins).fill(0);
 
   scores.forEach((score) => {
     let binIndex = Math.floor((score - minScore) / binSize);
-    binIndex = Math.min(binIndex, 9); // Ensure binIndex never exceeds 9
+    binIndex = Math.min(binIndex, numBins - 1);
     bins[binIndex]++;
   });
 
   return (
-    <Sparklines data={bins} min={0} max={Math.max(...bins)}>
+    <Sparklines height={20} data={bins} min={0} max={Math.max(...bins)}>
       <SparklinesBars />
     </Sparklines>
   );
