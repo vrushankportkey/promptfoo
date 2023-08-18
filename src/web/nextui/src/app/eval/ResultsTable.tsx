@@ -256,6 +256,8 @@ function ResultsSparkline({ scores }: { scores: number[] }) {
     bins[binIndex]++;
   });
 
+  console.log(bins)
+
   return (
     <Sparklines data={bins} min={0} max={Math.max(...bins)}>
       <SparklinesBars />
