@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { diffSentences, diffJson, diffWords } from 'diff';
-import { Sparklines, SparklinesBar, SparklinesReferenceLine } from 'react-sparklines';
+import { Sparklines, SparklinesBars } from 'react-sparklines';
 
 import './index.css';
 
@@ -244,6 +244,14 @@ function TableHeader({
   );
 }
 
+function ResultsSparkline({ scores }: { scores: number[] }) {
+   return (
+     <Sparklines data={scores} min={0} max={1}>
+       <SparklinesBars />
+     </Sparklines>
+   );
+ }
+
 interface ResultsTableProps {
   maxTextLength: number;
   columnVisibility: VisibilityState;
@@ -380,7 +388,7 @@ export default function ResultsTable({
                   ) : null}
                   )
                 </div>
-                <ResultsSparkline data={body.map((row) => row.outputs[idx])} />
+                <ResultsSparkline scores={body.map((row) => row.outputs[idx].score)} />
               </>
             );
           },
