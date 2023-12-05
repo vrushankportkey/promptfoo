@@ -176,7 +176,7 @@ export interface PromptWithMetadata {
   count: number;
 }
 
-export interface EvaluateResult {
+export type EvaluateResult = {
   provider: Pick<ProviderOptions, 'id'>;
   prompt: Prompt;
   vars: Record<string, string | object>;
@@ -187,7 +187,15 @@ export interface EvaluateResult {
   latencyMs: number;
   gradingResult?: GradingResult;
   namedScores: Record<string, number>;
-}
+};
+
+export type EvaluateResultWithRunContext = EvaluateResult & {
+  runContext: {
+    test: AtomicTestCase;
+    provider: ApiProvider;
+  }
+};
+
 
 export interface EvaluateTableOutput {
   pass: boolean;

@@ -17,9 +17,11 @@ import type {
   AtomicTestCase,
   EvaluateOptions,
   EvaluateResult,
+  EvaluateResultWithRunContext,
   EvaluateStats,
   EvaluateSummary,
   EvaluateTable,
+  GradingResult,
   NunjucksFilterMap,
   Prompt,
   TestCase,
@@ -148,6 +150,41 @@ class Evaluator {
     this.conversations = {};
   }
 
+  async runAssertionsForRow(rowOutputs: EvaluateResultWithRunContext[]): Promise<GradingResult[]> {
+    return Promise.all(
+      rowOutputs.map(async (rowOutput) => {
+        if (!rowOutput.response?.output) {
+          return {
+            pass: false,
+            reason: 'No response',
+            score: 0,
+            assertion: null,
+          };
+        }
+
+        const checkResult = await runAssertions({
+          prompt: rowOutput.prompt.raw,
+          provider: rowOutput.runContext.provider,
+          test: rowOutput.runContext.test,
+          output: rowOutput.response?.output,
+        });
+        if (!checkResult.pass) {
+          rowOutput.error = checkResult.reason;
+        }
+        rowOutput.success = checkResult.pass;
+        rowOutput.score = checkResult.score;
+        rowOutput.namedScores = checkResult.namedScores || {};
+        if (checkResult.tokensUsed) {
+          this.stats.tokenUsage.total += checkResult.tokensUsed.total;
+          this.stats.tokenUsage.prompt += checkResult.tokensUsed.prompt;
+          this.stats.tokenUsage.completion += checkResult.tokensUsed.completion;
+        }
+        rowOutput.gradingResult = checkResult;
+        return checkResult;
+      }),
+    );
+  }
+
   async runEval({
     provider,
     prompt,
@@ -155,7 +192,7 @@ class Evaluator {
     includeProviderId,
     delay,
     nunjucksFilters: filters,
-  }: RunEvalOptions): Promise<EvaluateResult> {
+  }: RunEvalOptions): Promise<EvaluateResultWithRunContext> {
     // Use the original prompt to set the display, not renderedPrompt
     let promptDisplay = prompt.display;
     if (includeProviderId) {
@@ -178,16 +215,21 @@ class Evaluator {
       renderedJson = JSON.parse(renderedPrompt);
     } catch {}
 
-    const setup = {
-      provider: {
-        id: provider.id(),
-      },
-      prompt: {
-        raw: renderedPrompt,
-        display: promptDisplay,
-      },
-      vars,
-    };
+    const setup: Pick<EvaluateResultWithRunContext, 'provider' | 'prompt' | 'vars' | 'runContext'> =
+      {
+        provider: {
+          id: provider.id(),
+        },
+        prompt: {
+          raw: renderedPrompt,
+          display: promptDisplay,
+        },
+        vars,
+        runContext: {
+          provider,
+          test,
+        },
+      };
 
     // Call the API
     let latencyMs = 0;
@@ -223,7 +265,7 @@ class Evaluator {
         }
       }
 
-      const ret: EvaluateResult = {
+      const ret: EvaluateResultWithRunContext = {
         ...setup,
         response,
         success: false,
@@ -252,25 +294,7 @@ class Evaluator {
         }
 
         invariant(processedResponse.output != null, 'Response output should not be null');
-        const checkResult = await runAssertions({
-          prompt: renderedPrompt,
-          provider,
-          test,
-          output: processedResponse.output,
-        });
-        if (!checkResult.pass) {
-          ret.error = checkResult.reason;
-        }
-        ret.success = checkResult.pass;
-        ret.score = checkResult.score;
-        ret.namedScores = checkResult.namedScores || {};
-        if (checkResult.tokensUsed) {
-          this.stats.tokenUsage.total += checkResult.tokensUsed.total;
-          this.stats.tokenUsage.prompt += checkResult.tokensUsed.prompt;
-          this.stats.tokenUsage.completion += checkResult.tokensUsed.completion;
-        }
         ret.response = processedResponse;
-        ret.gradingResult = checkResult;
       } else {
         ret.success = false;
         ret.score = 0;
@@ -300,6 +324,10 @@ class Evaluator {
         score: 0,
         namedScores: {},
         latencyMs,
+        runContext: {
+          test,
+          provider,
+        },
       };
     }
   }
@@ -642,6 +670,13 @@ class Evaluator {
         metrics.tokenUsage.total += row.response?.tokenUsage?.total || 0;
       },
     );
+
+        for (const row of table.body) {
+          const gradingResults = await this.runAssertionsForRow(row.outputs);
+          for (let i = 0; i < gradingResults.length; i++) {
+            row.outputs[i].gradingResult = gradingResults[i];
+          }
+        }
 
     if (progressbar) {
       progressbar.stop();
