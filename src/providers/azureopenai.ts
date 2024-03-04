@@ -1,3 +1,5 @@
+import OpenAI from 'openai';
+
 import logger from '../logger';
 import { REQUEST_TIMEOUT_MS, parseChatPrompt } from './shared';
 import { fetchWithCache } from '../cache';
@@ -11,7 +13,7 @@ import type {
   ProviderResponse,
 } from '../types';
 
-interface AzureOpenAiCompletionOptions {
+interface AzureOpenAiSharedOptions {
   // Azure identity params
   azureClientId?: string;
   azureClientSecret?: string;
@@ -28,7 +30,9 @@ interface AzureOpenAiCompletionOptions {
   apiBaseUrl?: string;
   apiKey?: string;
   apiVersion?: string;
+}
 
+type AzureOpenAiCompletionOptions = AzureOpenAiSharedOptions & {
   // OpenAI params
   temperature?: number;
   top_p?: number;
@@ -45,7 +49,7 @@ interface AzureOpenAiCompletionOptions {
   stop?: string[];
 
   passthrough?: object;
-}
+};
 
 class AzureOpenAiGenericProvider implements ApiProvider {
   deploymentName: string;
@@ -394,5 +398,89 @@ export class AzureOpenAiChatCompletionProvider extends AzureOpenAiGenericProvide
         error: `API response error: ${String(err)}: ${JSON.stringify(data)}`,
       };
     }
+  }
+}
+
+type AzureOpenAiAssistantOptions = AzureOpenAiSharedOptions & {
+  modelName?: string;
+  instructions?: string;
+  tools?: OpenAI.Beta.Threads.ThreadCreateAndRunParams['tools'];
+  /**
+   * If set, automatically call these functions when the assistant activates
+   * these function tools.
+   */
+  functionToolCallbacks?: Record<
+    OpenAI.FunctionDefinition['name'],
+    (arg: string) => Promise<string>
+  >;
+  metadata?: object[];
+};
+
+export class AzureOpenAiAssistantProvider extends AzureOpenAiGenericProvider {
+  assistantId: string;
+  assistantConfig: AzureOpenAiAssistantOptions;
+
+  constructor(
+    assistantId: string,
+    options: { config?: AzureOpenAiAssistantOptions; id?: string; env?: EnvOverrides } = {},
+  ) {
+    super(assistantId, options);
+    this.assistantConfig = options.config || {};
+    this.assistantId = assistantId;
+  }
+
+  async callApi(prompt: string): Promise<ProviderResponse> {
+    const apiKey = await this.getApiKey();
+    if (!apiKey) {
+      return {
+        error: 'Azure OpenAI API key is not set. Set the AZURE_OPENAI_API_KEY environment variable or add `apiKey` to the provider config.',
+      };
+    }
+
+    const body = {
+      assistant_id: this.assistantId,
+      model: this.assistantConfig.modelName || undefined,
+      instructions: this.assistantConfig.instructions || undefined,
+      tools: this.assistantConfig.tools || undefined,
+      metadata: this.assistantConfig.metadata || undefined,
+      prompt: prompt,
+      max_tokens: this.assistantConfig.max_tokens || undefined,
+      // Add other parameters as needed
+    };
+
+    logger.debug(`Calling Azure OpenAI API with body: ${JSON.stringify(body)}`);
+    let data;
+    try {
+      data = await this.fetchWithTimeout(this.getApiUrl(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': apiKey,
+        },
+        body: JSON.stringify(body),
+      }, REQUEST_TIMEOUT_MS);
+    } catch (err) {
+      return {
+        error: `API call error: ${String(err)}`,
+      };
+    }
+
+    logger.debug(`Azure OpenAI API response: ${JSON.stringify(data)}`);
+    if (data.error) {
+      return {
+        error: `API response error: ${data.error.code} ${data.error.message}`,
+      };
+    }
+
+    // Process the response as needed for Azure
+    // This is a placeholder and should be replaced with actual response processing logic
+    const output = data.choices[0].message;
+    const tokenUsage = getTokenUsage(data, false); // Assuming 'cached' is not applicable for Azure
+
+    return {
+      output,
+      tokenUsage,
+      // Add other response properties as needed
+    };
   }
 }
