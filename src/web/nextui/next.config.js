@@ -12,6 +12,9 @@ const nextConfig = {
 
     return config;
   },
+  serverRuntimeConfig: {
+    // Will only be available on the server side
+  },
 };
 
 module.exports = nextConfig;

@@ -10,7 +10,6 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import ResultsView from './ResultsView';
 import { getApiBaseUrl } from '@/api';
 import { IS_RUNNING_LOCALLY, USE_SUPABASE } from '@/constants';
-import { REMOTE_API_BASE_URL } from '@/../../../constants';
 import { useStore } from './store';
 
 import type { EvaluateSummary, UnifiedConfig, SharedResults } from '@/../../../types';
@@ -113,7 +112,7 @@ export default function Eval({
       setLoaded(true);
     } else if (fetchId) {
       const run = async () => {
-        const url = `${REMOTE_API_BASE_URL}/api/eval/${fetchId}`;
+        const url = `${await getApiBaseUrl()}/api/eval/${fetchId}`;
         console.log('Fetching eval from remote server', url);
         const response = await fetch(url);
         if (!response.ok) {

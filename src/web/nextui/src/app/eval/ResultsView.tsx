@@ -9,7 +9,6 @@ import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
 import CircularProgress from '@mui/material/CircularProgress';
 import DeleteIcon from '@mui/icons-material/Delete';
-import DownloadIcon from '@mui/icons-material/Download';
 import EditIcon from '@mui/icons-material/Edit';
 import FormControl from '@mui/material/FormControl';
 import Heading from '@mui/material/Typography';
@@ -39,7 +38,6 @@ import ShareModal from './ShareModal';
 import SettingsModal from './ResultsViewSettingsModal';
 import { useStore as useResultsViewStore } from './store';
 import { useStore as useMainStore } from '@/state/evalConfig';
-import { REMOTE_API_BASE_URL, REMOTE_APP_BASE_URL } from '@/../../../constants';
 
 import type { VisibilityState } from '@tanstack/table-core';
 import type { FilterMode } from './types';
@@ -107,7 +105,7 @@ export default function ResultsView({
   const handleShareButtonClick = async () => {
     setShareLoading(true);
     try {
-      const response = await fetch(`${REMOTE_API_BASE_URL}/api/eval`, {
+      const response = await fetch(`${await getApiBaseUrl()}/api/eval`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -125,7 +123,7 @@ export default function ResultsView({
       });
 
       const { id } = await response.json();
-      const shareUrl = `${REMOTE_APP_BASE_URL}/eval/${id}`;
+      const shareUrl = `${await getApiBaseUrl()}/eval/${id}`;
       setShareUrl(shareUrl);
       setShareModalOpen(true);
     } catch {
