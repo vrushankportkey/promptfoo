@@ -610,7 +610,10 @@ class Evaluator {
         for (const vars of varCombinations) {
           let colIndex = 0;
           for (const prompt of testSuite.prompts) {
-            for (const provider of testSuite.providers) {
+            const providers = testCase.provider
+              ? [testCase.provider as ApiProvider] // was resolved in readTest
+              : testSuite.providers;
+            for (const provider of providers) {
               if (testSuite.providerPromptMap) {
                 const allowedPrompts = testSuite.providerPromptMap[provider.id()];
                 if (allowedPrompts && !allowedPrompts.includes(prompt.display)) {
