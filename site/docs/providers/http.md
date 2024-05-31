@@ -83,6 +83,18 @@ Extracts the message content from this response:
 }
 ```
 
+## Parsing a text response
+
+The raw text of a response is available in the `text` variable of responseParser.  You will also have to set `responseFormat` to `text`.
+
+```yaml
+providers:
+  - id: 'https://example.com/openai-compatible/chat/completions'
+    config:
+      # ...
+      responseParser: 'json.choices[0].message.content'
+```
+
 ## Using as a library
 
 If you are using promptfoo as a [node library](/docs/usage/node-package/), you can provide the equivalent provider config:
