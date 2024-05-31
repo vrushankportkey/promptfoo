@@ -20,7 +20,10 @@ export class HttpProvider implements ApiProvider {
   constructor(url: string, options: ProviderOptions) {
     this.url = url;
     this.config = options.config;
-    this.responseParser = createResponseParser(this.config.responseParser);
+    this.responseParser = createResponseParser(
+      this.config.responseParser,
+      this.config.responseFormat || 'json',
+    );
   }
 
   id(): string {
@@ -35,14 +38,19 @@ export class HttpProvider implements ApiProvider {
     // Render all nested strings
     const nunjucks = getNunjucksEngine();
     const stringifiedConfig = safeJsonStringify(this.config);
-    const renderedConfig: { method: string; headers: Record<string, string>; body: any } =
-      JSON.parse(
-        nunjucks.renderString(stringifiedConfig, {
-          prompt,
-          ...context?.vars,
-        }),
-      );
+    const renderedConfig: {
+      method: string;
+      headers: Record<string, string>;
+      responseFormat: 'json' | 'text';
+      body: any;
+    } = JSON.parse(
+      nunjucks.renderString(stringifiedConfig, {
+        prompt,
+        ...context?.vars,
+      }),
+    );
 
+    const responseFormat = renderedConfig.responseFormat || 'json';
     const method = renderedConfig.method || 'POST';
     const headers = renderedConfig.headers || { 'Content-Type': 'application/json' };
     invariant(typeof method === 'string', 'Expected method to be a string');
@@ -59,7 +67,7 @@ export class HttpProvider implements ApiProvider {
           body: JSON.stringify(renderedConfig.body),
         },
         REQUEST_TIMEOUT_MS,
-        'json',
+        responseFormat,
       );
     } catch (err) {
       return {
@@ -72,12 +80,15 @@ export class HttpProvider implements ApiProvider {
   }
 }
 
-function createResponseParser(parser: any): (data: any) => ProviderResponse {
+function createResponseParser(
+  parser: any,
+  responseFormat: 'json' | 'text',
+): (data: any) => ProviderResponse {
   if (typeof parser === 'function') {
     return parser;
   }
   if (typeof parser === 'string') {
-    return new Function('json', `return ${parser}`) as (data: any) => ProviderResponse;
+    return new Function(responseFormat, `return ${parser}`) as (data: any) => ProviderResponse;
   }
   return (data) => ({ output: data });
 }
