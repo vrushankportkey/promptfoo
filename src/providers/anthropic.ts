@@ -203,16 +203,23 @@ export class AnthropicMessagesProvider implements ApiProvider {
 
       logger.debug(`Anthropic Messages API response: ${JSON.stringify(response)}`);
 
+      const contentBlock = response.content[0];
+
       if (isCacheEnabled()) {
         try {
-          await cache.set(cacheKey, JSON.stringify(response.content[0].text));
+          if (contentBlock.type === 'text') {
+            await cache.set(cacheKey, JSON.stringify(contentBlock.text));
+          } else {
+            // ToolUseBlock
+            await cache.set(cacheKey, JSON.stringify(contentBlock));
+          }
         } catch (err) {
           logger.error(`Failed to cache response: ${String(err)}`);
         }
       }
 
       return {
-        output: response.content[0].text,
+        output: contentBlock.type === 'text' ? contentBlock.text : contentBlock,
         tokenUsage: getTokenUsage(response, false),
         cost: calculateCost(
           this.modelName,

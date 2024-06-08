@@ -91,7 +91,7 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.20.1",
+    "@anthropic-ai/sdk": "^0.22.0",
     "@apidevtools/json-schema-ref-parser": "^10.1.0",
     "ajv": "^8.14.0",
     "ajv-formats": "^2.1.1",
