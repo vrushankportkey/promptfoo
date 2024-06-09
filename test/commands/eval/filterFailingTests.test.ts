@@ -12,10 +12,10 @@ jest.mock('../../../src/util', () => {
 describe('filterFailingTests', () => {
   const varsSuccess = { successKey: 'value' };
   const varsFailure = { failureKey: 'value' };
-  const sucessTest = { vars: varsSuccess };
+  const successTest = { vars: varsSuccess };
   const failureTest = { vars: varsFailure };
   const testSuite = {
-    tests: [sucessTest, failureTest],
+    tests: [successTest, failureTest],
   } as unknown as TestSuite;
   const outputPath = 'outputPath.json';
   const restResult = {
